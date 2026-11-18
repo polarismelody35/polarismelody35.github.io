@@ -12,15 +12,33 @@
      npx esbuild src/hero3d.js --bundle --minify --format=esm --outfile=assets/js/hero3d.min.js
    (needs `npm i three esbuild` once).
 
-   If WebGL is not available the page keeps its CSS orbits.
+   It also turns the song stars in "Every star is a song" into real
+   3D spheres (see startStarMap below).
+
+   If WebGL is not available the page keeps its CSS orbits / CSS stars.
    ========================================================== */
 import {
   WebGLRenderer, Scene, PerspectiveCamera, Group, Mesh, Sprite, SpriteMaterial,
   SphereGeometry, TorusGeometry, RingGeometry, BufferGeometry, Float32BufferAttribute,
   MeshStandardMaterial, MeshBasicMaterial, PointsMaterial, Points,
   HemisphereLight, DirectionalLight, PointLight, CanvasTexture, Color, Vector2, Vector3,
-  Raycaster, SRGBColorSpace, DoubleSide
+  Raycaster, SRGBColorSpace, DoubleSide, OrthographicCamera, AmbientLight
 } from "three";
+
+function glowTexture(inner, outer) {
+  const c = document.createElement("canvas");
+  c.width = c.height = 128;
+  const g = c.getContext("2d");
+  const grd = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+  grd.addColorStop(0, inner);
+  grd.addColorStop(0.35, outer);
+  grd.addColorStop(1, "rgba(255,255,255,0)");
+  g.fillStyle = grd;
+  g.fillRect(0, 0, 128, 128);
+  const t = new CanvasTexture(c);
+  t.colorSpace = SRGBColorSpace;
+  return t;
+}
 
 const hero = document.getElementById("home");
 const PM = window.PM35;
@@ -63,20 +81,6 @@ function start() {
   scene.add(core);
 
   /* ---------- textures drawn on a canvas (no image files needed) ---------- */
-  function glowTexture(inner, outer) {
-    const c = document.createElement("canvas");
-    c.width = c.height = 128;
-    const g = c.getContext("2d");
-    const grd = g.createRadialGradient(64, 64, 0, 64, 64, 64);
-    grd.addColorStop(0, inner);
-    grd.addColorStop(0.35, outer);
-    grd.addColorStop(1, "rgba(255,255,255,0)");
-    g.fillStyle = grd;
-    g.fillRect(0, 0, 128, 128);
-    const t = new CanvasTexture(c);
-    t.colorSpace = SRGBColorSpace;
-    return t;
-  }
   function dotTexture() {
     const c = document.createElement("canvas");
     c.width = c.height = 64;
@@ -363,4 +367,153 @@ function start() {
   requestAnimationFrame(() => hero.classList.add("is-3d-in"));
 }
 
+/* ==========================================================
+   "Every star is a song" — the stars become glossy 3D spheres.
+   The HTML buttons stay exactly as they are (clicks, keyboard,
+   labels, selection rings); a transparent WebGL layer draws a
+   lit, slowly turning sphere where each button's ball is.
+   ========================================================== */
+function bandTexture() {
+  // soft gas-giant bands, white-ish, tinted by each star's colour
+  const c = document.createElement("canvas");
+  c.width = 256; c.height = 128;
+  const g = c.getContext("2d");
+  g.fillStyle = "#ffffff";
+  g.fillRect(0, 0, 256, 128);
+  for (let i = 0; i < 9; i++) {
+    const y = Math.random() * 128, h = 4 + Math.random() * 16;
+    g.fillStyle = "rgba(" + (Math.random() < 0.5 ? "70,60,110" : "255,255,255") + "," + (0.05 + Math.random() * 0.12) + ")";
+    g.beginPath();
+    g.moveTo(0, y);
+    for (let x = 0; x <= 256; x += 16) g.lineTo(x, y + Math.sin(x / 40 + i) * 3);
+    g.lineTo(256, y + h); g.lineTo(0, y + h); g.closePath();
+    g.fill();
+  }
+  const t = new CanvasTexture(c);
+  t.colorSpace = SRGBColorSpace;
+  return t;
+}
+
+function startStarMap() {
+  const map = document.querySelector(".star-map");
+  const list = document.getElementById("starList");
+  if (!map || !list) return;
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
+  const lite = window.matchMedia("(max-width: 700px)").matches || !window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+
+  let renderer;
+  try {
+    renderer = new WebGLRenderer({ antialias: true, alpha: true, powerPreference: "low-power" });
+  } catch (e) {
+    return; // no WebGL → CSS stars stay
+  }
+  if (!renderer.getContext()) return;
+  renderer.setClearColor(0x000000, 0);
+  renderer.outputColorSpace = SRGBColorSpace;
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, lite ? 1.75 : 2));
+  const canvas = renderer.domElement;
+  canvas.className = "star-map-3d";
+  canvas.setAttribute("aria-hidden", "true");
+  map.appendChild(canvas);
+  map.classList.add("has-3d");
+
+  const scene = new Scene();
+  // 1 unit = 1 CSS pixel; y goes down like the page
+  const camera = new OrthographicCamera(0, 1, 0, 1, -500, 500);
+  camera.position.z = 100;
+  scene.add(new AmbientLight(0xffffff, 0.55));
+  scene.add(new HemisphereLight(0xf3eff6, 0x2a2d48, 1.4));
+  const key = new DirectionalLight(0xffffff, 3.2);
+  key.position.set(-0.6, -0.8, 1); // upper left (y is flipped)
+  scene.add(key);
+  const rim = new DirectionalLight(0xc9bff0, 1.6);
+  rim.position.set(0.8, 0.6, -0.4);
+  scene.add(rim);
+
+  const sphere = new SphereGeometry(1, 48, 32);
+  const glowTex = glowTexture("rgba(255,255,255,0.95)", "rgba(255,255,255,0.32)");
+  const items = new Map(); // button → { body, glow, tilt, spin, phase }
+
+  function itemFor(btn) {
+    let it = items.get(btn);
+    if (it) return it;
+    const color = new Color(btn.style.getPropertyValue("--c").trim() || "#CBC2EE");
+    const soon = btn.classList.contains("is-soon");
+    const body = new Mesh(sphere, new MeshStandardMaterial({
+      color, map: bandTexture(), roughness: 0.38, metalness: 0.08,
+      emissive: color, emissiveIntensity: 0.28,
+      transparent: soon, opacity: soon ? 0.8 : 1
+    }));
+    const holder = new Group();
+    holder.rotation.set(0.35 + Math.random() * 0.3, 0, -0.25 + Math.random() * 0.5); // each has its own axis tilt
+    holder.add(body);
+    const glow = new Sprite(new SpriteMaterial({ map: glowTex, color, transparent: true, opacity: soon ? 0.35 : 0.6, depthWrite: false }));
+    scene.add(glow, holder);
+    it = { body, holder, glow, color, soon, spin: 0.25 + Math.random() * 0.35, phase: Math.random() * 6.28 };
+    items.set(btn, it);
+    return it;
+  }
+  function dispose(it) {
+    scene.remove(it.holder, it.glow);
+    it.body.material.map.dispose();
+    it.body.material.dispose();
+    it.glow.material.dispose();
+  }
+
+  let W = 1, H = 1;
+  function resize() {
+    W = Math.max(1, canvas.clientWidth); H = Math.max(1, canvas.clientHeight);
+    renderer.setSize(W, H, false);
+    camera.left = 0; camera.right = W; camera.top = 0; camera.bottom = H;
+    camera.updateProjectionMatrix();
+  }
+
+  let raf = null, visible = false, t = 0, prev = performance.now();
+  function frame(now) {
+    raf = null;
+    const dt = Math.min(0.05, (now - prev) / 1000);
+    prev = now;
+    const still = reduce.matches;
+    if (!still) t += dt;
+
+    const cr = canvas.getBoundingClientRect();
+    const sx = W / (cr.width || 1), sy = H / (cr.height || 1);
+    const seen = new Set();
+    list.querySelectorAll(".star").forEach((btn) => {
+      const core = btn.querySelector(".star-core");
+      if (!core) return;
+      const it = itemFor(btn);
+      seen.add(btn);
+      const r = core.getBoundingClientRect(); // includes hover / selected scale and the float
+      const x = (r.left + r.width / 2 - cr.left) * sx;
+      const y = (r.top + r.height / 2 - cr.top) * sy;
+      const rad = (r.width / 2) * sx * 1.15; // a little bigger than the CSS ball
+      const on = btn.getAttribute("aria-pressed") === "true" || btn.matches(":hover, :focus-visible") || btn.classList.contains("is-playing");
+      it.holder.position.set(x, y, 0);
+      it.holder.scale.setScalar(rad);
+      it.body.rotation.y += still ? 0 : dt * it.spin;
+      const breathe = still ? 0 : Math.sin(t * 0.9 + it.phase) * 0.06;
+      it.body.material.emissiveIntensity = (on ? 0.5 : 0.34) + breathe;
+      it.glow.position.set(x, y, -1);
+      it.glow.scale.setScalar(rad * (on ? 5.6 : 4.6) * (1 + breathe));
+      it.glow.material.opacity = Math.min(1, (it.soon ? 0.4 : 0.75) * (on ? 1.25 : 1));
+    });
+    items.forEach((it, btn) => { if (!seen.has(btn)) { dispose(it); items.delete(btn); } }); // re-rendered (language change)
+
+    renderer.render(scene, camera);
+    if (visible) raf = requestAnimationFrame(frame);
+  }
+  function wake() { if (!raf && visible) { prev = performance.now(); raf = requestAnimationFrame(frame); } }
+
+  if ("IntersectionObserver" in window) {
+    new IntersectionObserver((en) => { visible = en[0].isIntersecting && !document.hidden; wake(); }).observe(map);
+  } else { visible = true; }
+  document.addEventListener("visibilitychange", () => { visible = !document.hidden; wake(); });
+  if ("ResizeObserver" in window) new ResizeObserver(() => { resize(); wake(); }).observe(canvas);
+  else window.addEventListener("resize", () => { resize(); wake(); });
+  resize();
+  wake();
+}
+
 start();
+startStarMap();

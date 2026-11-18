@@ -2,7 +2,7 @@
 
 ## 3D universe on the home screen
 
-The 3D space on the first screen is made with [Three.js](https://threejs.org/).
+The 3D space on the first screen, and the 3D song spheres in "Every star is a song", are made with [Three.js](https://threejs.org/).
 
 - Source: `src/hero3d.js`
 - The site loads the bundled file: `assets/js/hero3d.min.js`
