@@ -1240,8 +1240,15 @@ html[lang="ja"] .card-title { font-size: 1.3rem; line-height: 1.4; }
 .is-tilting > .tilt-glare { opacity: 1; }
 .about-mark > .tilt-glare { display: none; }
 
-/* the star map sits on a gently tilted plane, like a disc in space */
-.motion .star-map.is-in .star-orbits { filter: drop-shadow(0 18px 24px rgba(10, 8, 30, 0.35)); }
+/* "Every star is a song": the balls are drawn as real 3D spheres (WebGL) */
+.star-map-3d {
+  position: absolute; left: -10%; top: -10%; width: 120%; height: 120%;
+  z-index: 0; pointer-events: none;
+  opacity: 0; transition: opacity 1200ms var(--ease);
+}
+.star-map.has-3d .star-map-3d { opacity: 1; }
+.star-map.has-3d .stars { z-index: 1; }            /* buttons & labels stay on top, invisible ball over the sphere */
+.star-map.has-3d .stars .star-core { background: transparent; box-shadow: none; filter: none; }
 
 @media (prefers-reduced-motion: reduce) {
   .hero-3d { transition: none; }
