@@ -98,7 +98,7 @@ function start() {
   const root = new Group();
   scene.add(root);
   const system = new Group();
-  system.rotation.set(1.12, 0, -0.2); // like looking at the orbits from slightly above
+  system.rotation.set(0.75, 0, -0.12); // tilted only a little, so the orbits stay round
   root.add(system);
 
   // the light at the centre (Polaris)
@@ -140,7 +140,7 @@ function start() {
     const angleDeg = typeof s.angle === "number" ? s.angle : (i * 137.5 + 30) % 360;
     const released = song.status === "released";
     const color = new Color(PM.colorOf(song.id, i));
-    const size = released ? 0.42 : 0.28;
+    const size = 0.26; // every song planet the same size
 
     const holder = new Group();
     const body = new Mesh(sphere, new MeshStandardMaterial({
@@ -176,7 +176,7 @@ function start() {
   });
 
   // stardust at many depths
-  const DUST = lite ? 220 : 520;
+  const DUST = lite ? 176 : 416; // 1/5 fewer than before
   const pos = [], col = [];
   const palette = ["#8F86B8", "#C79DA6", "#D2AE6A", "#83A6CB", "#A497D8", "#D58FA6"].map((c) => new Color(c));
   for (let i = 0; i < DUST; i++) {
