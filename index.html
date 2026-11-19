@@ -753,17 +753,18 @@ a.follow-link:hover { transform: translateY(-2px); box-shadow: var(--shadow-soft
   .hero-inner > * { opacity: 1; transform: none; }
 }
 
-/* ---- Gallery: compact horizontal cards on phones ---- */
+/* ---- Gallery on phones: 2-column album grid (square jacket on top, title below) ---- */
 @media (max-width: 559px) {
-  .gallery { gap: 0.9rem; }
-  .card { flex-direction: row; align-items: stretch; border-radius: var(--radius-m); }
-  .card > .art, .card > .card-art-btn { width: 120px; flex: none; align-self: flex-start; }
-  .card > .card-art-btn .art, .card > .art { height: auto; min-height: 0; aspect-ratio: 1; } /* whole square jacket, not cropped */
-  .card-art-btn .play-hint { right: 0.5rem; bottom: 0.5rem; width: 34px; height: 34px; }
-  .card-body { padding: 0.9rem 1rem 1rem; }
-  .card-title { font-size: 1.3rem; }
-  .card-desc { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .gallery { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.9rem 0.8rem; }
+  .card { border-radius: var(--radius-m); }
+  .card-art-btn .play-hint { right: 0.45rem; bottom: 0.45rem; width: 32px; height: 32px; }
+  .card-body { padding: 0.7rem 0.8rem 0.9rem; }
+  .card-world { font-size: 0.625rem; letter-spacing: 0.1em; }
+  html[lang] .gallery .card-title { font-size: 0.95rem; letter-spacing: 0.02em; line-height: 1.4; margin-top: 0.25rem; }
+  .card-theme, .card-desc, .card-credit { display: none; }
   .card-actions { padding-top: 0.7rem; }
+  .card-actions .btn { width: 100%; justify-content: center; }
+  .card-actions .btn-outline { display: none; }
 }
 
 /* ==========================================================
