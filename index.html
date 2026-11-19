@@ -757,8 +757,8 @@ a.follow-link:hover { transform: translateY(-2px); box-shadow: var(--shadow-soft
 @media (max-width: 559px) {
   .gallery { gap: 0.9rem; }
   .card { flex-direction: row; align-items: stretch; border-radius: var(--radius-m); }
-  .card > .art, .card > .card-art-btn { width: 108px; flex: none; }
-  .card > .card-art-btn .art, .card > .art { height: 100%; min-height: 108px; aspect-ratio: auto; }
+  .card > .art, .card > .card-art-btn { width: 120px; flex: none; align-self: flex-start; }
+  .card > .card-art-btn .art, .card > .art { height: auto; min-height: 0; aspect-ratio: 1; } /* whole square jacket, not cropped */
   .card-art-btn .play-hint { right: 0.5rem; bottom: 0.5rem; width: 34px; height: 34px; }
   .card-body { padding: 0.9rem 1rem 1rem; }
   .card-title { font-size: 1.3rem; }
@@ -3215,6 +3215,6 @@ window.PM35_SETTINGS = {
 
   </script>
   <!-- HOME: real 3D universe (Three.js). Source: src/hero3d.js -->
-  <script type="module" src="assets/js/hero3d.min.js?v=20261119"></script>
+  <script type="module" src="assets/js/hero3d.min.js?v=20261119c"></script>
 </body>
 </html>

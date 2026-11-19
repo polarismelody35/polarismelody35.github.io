@@ -98,7 +98,7 @@ function start() {
   const root = new Group();
   scene.add(root);
   const system = new Group();
-  system.rotation.set(0.75, 0, -0.12); // tilted only a little, so the orbits stay round
+  system.rotation.set(0.32, 0, -0.1); // seen almost from the front, so the orbits look round
   root.add(system);
 
   // the light at the centre (Polaris)
@@ -109,9 +109,9 @@ function start() {
   // orbits
   const ORBITS = [
     null,
-    { r: 3.9, color: "#A497D8", period: 38, dir: 1 },
-    { r: 6.2, color: "#C79DA6", period: 62, dir: -1 },
-    { r: 8.6, color: "#83A6CB", period: 96, dir: 1 }
+    { r: 3.1, color: "#A497D8", period: 38, dir: 1 },
+    { r: 4.9, color: "#C79DA6", period: 62, dir: -1 },
+    { r: 6.7, color: "#83A6CB", period: 96, dir: 1 }
   ];
   for (let i = 1; i <= 3; i++) {
     const o = ORBITS[i];
@@ -176,7 +176,7 @@ function start() {
   });
 
   // stardust at many depths
-  const DUST = lite ? 176 : 416; // 1/5 fewer than before
+  const DUST = lite ? 36 : 84; // only about 1/5 of the original amount
   const pos = [], col = [];
   const palette = ["#8F86B8", "#C79DA6", "#D2AE6A", "#83A6CB", "#A497D8", "#D58FA6"].map((c) => new Color(c));
   for (let i = 0; i < DUST; i++) {
@@ -211,7 +211,7 @@ function start() {
     renderer.setSize(W, H, false);
     camera.aspect = W / H;
     // keep the inner orbits on screen in tall (phone) screens
-    camDist = 24 / Math.min(1, Math.max(0.55, camera.aspect * 1.25));
+    camDist = 24 / Math.min(1, Math.max(0.42, camera.aspect)); // phones: pull back so the whole orbit fits
     camera.updateProjectionMatrix();
     needsFrame = true;
   }
